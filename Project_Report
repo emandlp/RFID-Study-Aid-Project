@@ -1,0 +1,97 @@
+RFID Study Aid Project Report
+Cole Portman, Emmanuel Delapaz, Liam Aiken
+
+Executive Summary
+	Originally, we wanted to utilize the RFID-RC522 module to read, clone, and write our student ID cards onto different RFID devices. Unfortunately, 
+  the library for the reader only reads in 16 byte UIDs and data stored using the MIFARE classic structure. Our student ID cards have 28 byte UIDs with 
+  4 additional encrypted bytes, which prevented us from reading them. Still wanting to utilize the RC522, we decided to make a study aid that takes in RFID 
+  coded tags as letter answers (A,B,C,D) to multiple choice questions outputted on an LCD display. 
+
+Background
+	As a general application, the device demonstrates the ability to code RFID tags and detect their inputs to actuate an output. More specifically, 
+  the device is actually intended to be used as a study aid. It’s designed to be able to easily copy and paste questions in a line, and answers in a 
+  separate line. The repetition of incorrect answers helps the user better learn the more difficult questions. The physical element of the system also 
+  makes studying more fun and satisfying. We did not base our project on any pre-existing project that we know of. The RFID reading and writing is all 
+  conducted using the Arduino library called MFRC522. The project is similar in spirit to quizlet in that they are both study aids that make you practice 
+  incorrectly answered questions again. There are many study aids like quizlet on the market, but ours is unique due to its physical aspect.
+
+Functional Description and Product Operation
+	Our study aid utilizes RFID technology to receive input from multiple-choice RFID coded tags (A, B, C, D) as answers displayed via an LCD screen. 
+  In the code, questions are imputed into an array with their corresponding answers in a separate array. When running, a blue LED indicates readiness 
+  for an answer. After the user responds with an RFID tag, the LED turns green to confirm a correct answer, and red to indicate an incorrect one. The 
+  LCD screen then shows the number of correctly answered questions out of the total number of questions and prompts the user to press a button for the 
+  next question. This process continues until all questions are answered, which concludes the first round. If any questions are answered incorrectly, 
+  subsequent rounds repeat those questions, updating the amount of correctly answered questions and total questions with each round. Rounds increment until 
+  all questions are answered correctly. At the very end, the LCD prompts the user to press the button on the Arduino microcontroller to reset the device, 
+  starting the studying process over again.
+
+Hardware
+	Our two input devices in the system are the RFID-RC522 and the push button. The RFID-RC522 is a 13.56 Mhz high frequency RFID reader/writer. The RC522 
+  is represented by the 8 pin header in Figure 1, and labeled by name in Figure 2. The RFID reader was wired to the Arduino in accordance with the recommended 
+  layout on the website. The button functions as an interrupt in the system and is connected to digital pin 2 because other pins did not seem to work. 
+  Our two output devices are the RGB LED and the LCD display. The RGB LED has one terminal for ground and the other three are for each color (red, blue, green).
+  The color terminals are connected directly to analog input pins of the arduino (set to output in the code) with 220 ohm resistors. We decided to use the 
+  input pins as outputs because we ran out of digital pins with all the LCD and RC522 hookups. The LCD display was wired with the remaining digital pins.  
+  The A pin (pin 15) needed a 220 ohm resistor before connected to the 5V rail, and to preserve an extra arduino pin, the contrast pin (V0, pin 3) was wired
+  directly to a potentiometer for modular control. In essence, there are 4 separate circuits running through the arduino, one for each input/output device. 
+  It is the software that unites the separate circuits. Both figures show the separation of the devices. In Figure 1, the physical and electrical separation
+  of the components is shown, and in Figure 2, a more clear and detailed electrical schematic is shown. All of the power wires in Figure 1 are red and all
+  of the ground wires are black. The RC522 to the arduino is represented by blue wires, the button to the arduino is purple, the LCD to the arduino is green, 
+  and the RGB LED to the arduino is white.
+
+
+Software
+	Global variables: bool loopval - used for scan() function to infinite loop until a card is scanned. bool Continue - used in press2continue() function 
+  to get out of infinite while loop to go onto the next question. byte x - stores the card input. char arr[5][100] - holds the questions that are going to
+  be asked. int arr2[5] - holds the right answers for the questions in arr. int incorrect_arr[5] - holds a -1 if the question was answered wrong and 0 if 
+  correctly. int arr_size - holds the size of one of the arrays to use to iterate through all of them as they are all the same length. 
+  int total_questions -  stores the amount of questions one needs to go through for each round. int roundnum - keeps track of round one is on. 
+  int line_num - used for lcd display to display on both lines. int Cursor - cursor for lcd display to scroll the text.
+	Functions: setup() the setup includes setting up the rfid scanner, setting up the lcd screen, setting up pins A0, A1, A2  as output for the led and 
+  setting up the push button to interrupt. bool arr_check(int arr[], int n)  this function checks all values in the inputted array (incorrect_arr) and 
+  returns false if all values are 0, else returns true, also updates int total_questions to as many -1's there are in the array imputed. 
+  void scan(int i) this function looks for a card to scan and sets the led light as blue to indicate it is doing so. While looking for a signal it displays
+  the question on the lcd screen using scroll(). Once a card is scanned the infinite while loop that is constantly looking for a card stops and the value 
+  stored on the card gets put into the variable x. void setColor(int redValue, int greenValue, int blueValue) this function analog writes to the three pins
+  in control of the LED and sets the color using the corresponding RGB values as inputs. void press2continue(int i, int j) is a function that pauses the code
+  using a while loop dependent on the global boolean variable, continue. It also shows current statistics (correct questions (int i)/total questions (int j)).
+  Once the user presses the button signifying they are ready for the next question, the while loop is broken with void press(), which stops the infinite loop 
+  by changing the global boolean continue to true. scroll() The scroll function takes in a character array as an input (the question array) and essentially 
+  uses a for loop to display 16 digits at a time and then increment the start and end positions of the array by one until it reaches the end where it is
+  reset to the beginning. It uses the global variables int line_num and int Cursor to keep track of the position. It does one frame at a time so when it
+  is called, there is a delay statement after it so it doesn’t iterate too fast. void run_game() this function runs through the whole game.
+
+Program Flow: The game starts with the calling of the function run_game(). Within the function is a while loop with the parameters 
+  being (arr_check(incorrect_arr, arr_size)) meaning that while there are -1’s or incorrect questions within the array incorrect_arr, the contents 
+  inside will continue to loop. Within the while loop it first displays the round on the lcd screen then it proceeds to enter a for loop with its 
+  parameters being (int i=0; i<arr_size; i++) meaning i will iterate through the length of the arrays. Within that for loop is an if statement that 
+  contains (incorrect_arr[i] == -1) meaning as the for loop iterates through the length of the arrays if incorrect_arr at that position contains a 
+  -1 (for the first run all the values are set as -1 so the game will run though all of the questions) it will then run whatever is within it (which is 
+  the process of asking the question and getting an answer and responding accordingly to what they put). Within the if statement the first thing that runs 
+  is the scan() function which both displays the question in arr position i and also loops infinitely looking for a card and will stop when a card is
+  scanned and store the cards value within the global variable x. The scan() function also calls the scroll() function, which displays the question 16 
+  digits at a time on the LCD display, this is how the user is supposed to know what they are answering. Next the code runs into an if, else pair saying
+  if(x == arr2[i]) meaning if the value retrieved from the scan is the same value that is stored in arr2 which is the right answer (aka the person got
+  the question correct) it runs one segment of the code, else (the person got the question incorrect) it runs the other segment. If the person gets the
+  question correct the led turns green, the -1 in the incorrect_arr at that position turns to a 0 (signifying that the person got the question correct
+  and it will not run though this question in proceeding rounds), displays correct on the lcd display, then proceeds to run the press2continue() function
+  which pauses the game until the user signifies they are ready for the next question by pressing the button while also displaying their statistics (total
+  questions correct/ total questions). If the user got the question wrong then the led turns red, the lcd displays incorrect, and the press2continue()
+  function is called. Once the for loop finishes running though all the questions the variable roundnum increases by one signifying that if the code
+  loops again then it would be on the next round. The code then proceeds to go back up to the while loop conditions and checks incorrect_arr with the
+  function arr_check() to see if there are any -1’s in it and if so it will run though the whole process again. Once the while loop ends (only if all 
+  the questions have been answered correct and all the -1’s have turned into 0’s in the array) then the code will turn off the led and signify the user,
+  via lcd display, to press the Arduino button to reset the program and start over again.
+
+Post-Design Analysis
+	Originally, in our proposal, we wanted to implement RFID technology to be able to scan our student IDs, however the tags we bought to copy over
+  data had 16 bytes of information available (e.g formatted AA AA AA AA, hexadecimal), whereas our student IDs had 28 bytes of information as well
+  as 4 encryption bytes that did not show up. Because of this, we decided to shift our focus into a study game that used the tags as answer choices.
+  Some of the most interesting/novel parts of our project would be the LCD display that scrolled through questions at a predetermined pace, as well
+  as the RFID tags being easily programmable to different values. Also, our project does not rely on any serial monitor display, so you can simply
+  upload the code and run the program off of a battery. The most difficult part of this project was the code, as C is a bit trickier when it comes 
+  to character arrays. Making sure the game would still loop while at least one question was incorrect was probably the most difficult portion of 
+  the project. Going forward, we would like to implement a larger LCD display while also displaying questions and answers separately. More compatibility
+  in adding questions as well as a better microcontroller for more byte storage would also be considered. Because of the portable nature of the project,
+  it would be easy to 3D print housing for all of the components to make it better on the go. Additionally, a longer term upgrade would be to track
+  individual user stats by adding data that would scan before the question phase to see who got the most correct answers.
